@@ -1,9 +1,7 @@
 React 团队面向开发者给出了两条 React-Hooks 的使用原则，原则的内容如下：
 
 1.  只在 React 函数中调用 Hook；
-    
 2.  不要在循环、条件或嵌套函数中调用 Hook。
-    
 
 原则 1 无须多言，React-Hooks 本身就是 React 组件的“钩子”，在普通函数里引入意义不大。我相信更多的人在原则 2 上栽过跟头，或者说至今仍然对它半信半疑。其实，原则 2 中强调的所有“**不要**”，都是在指向同一个目的，那就是**要确保 Hooks 在每次渲染时都保持同样的执行顺序**。
 
@@ -15,43 +13,44 @@ React 团队面向开发者给出了两条 React-Hooks 的使用原则，原则�
 
 先来看一个小 Demo：
 
-    import React, { useState } from "react";
-    
-    function PersonalInfoComponent() {
-      // 集中定义变量
-      let name, age, career, setName, setCareer;
-    
-      // 获取姓名状态
-      [name, setName] = useState("修言");
-    
-      // 获取年龄状态
-      [age] = useState("99");
-    
-      // 获取职业状态
-      [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
-    
-      // 输出职业信息
-      console.log("career", career);
-    
-      // 编写 UI 逻辑
-      return (
-        <div className="personalInfo">
-          <p>姓名：{name}</p>
-          <p>年龄：{age}</p>
-          <p>职业：{career}</p>
-          <button
-            onClick={() => {
-              setName("秀妍");
-            }}
-          >
-            修改姓名
-          </button>
-        </div>
-      );
-    }
-    
-    export default PersonalInfoComponent;
-    
+```jsx
+import React, { useState } from "react";
+
+function PersonalInfoComponent() {
+  // 集中定义变量
+  let name, age, career, setName, setCareer;
+
+  // 获取姓名状态
+  [name, setName] = useState("修言");
+
+  // 获取年龄状态
+  [age] = useState("99");
+
+  // 获取职业状态
+  [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
+
+  // 输出职业信息
+  console.log("career", career);
+
+  // 编写 UI 逻辑
+  return (
+    <div className="personalInfo">
+      <p>姓名：{name}</p>
+      <p>年龄：{age}</p>
+      <p>职业：{career}</p>
+      <button
+        onClick={() => {
+          setName("秀妍");
+        }}
+      >
+        修改姓名
+      </button>
+    </div>
+  );
+}
+
+export default PersonalInfoComponent;
+```
 
 这个 PersonalInfoComponent 组件渲染出来的界面长这样：
 
@@ -69,7 +68,7 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
     function PersonalInfoComponent() {
       // 定义变量的逻辑不变
       let name, age, career, setName, setCareer;
-    
+
       // 这里追加对 isMounted 的输出，这是一个 debug 性质的操作
       console.log("isMounted is", isMounted);
       // 这里追加 if 逻辑：只有在首次渲染（组件还未挂载）时，才获取 name、age 两个状态
@@ -78,11 +77,11 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
         [name, setName] = useState("修言");
         // eslint-disable-next-line
         [age] = useState("99");
-    
+
         // if 内部的逻辑执行一次后，就将 isMounted 置为 true（说明已挂载，后续都不再是首次渲染了）
         isMounted = true;
       }
-    
+
       // 对职业信息的获取逻辑不变
       [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
       // 这里追加对 career 的输出，这也是一个 debug 性质的操作
@@ -104,7 +103,6 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
       );
     }
     export default PersonalInfoComponent;
-    
 
 修改后的组件在初始渲染的时候，界面与上个版本无异：
 
@@ -141,7 +139,6 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
        >
       修改姓名
     </button>
-    
 
 确实，代码是没错的，我们调用的是 setName，那么它修改的状态也应该是 name，而不是 career。
 
@@ -152,9 +149,7 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
 这里强调“源码流程”而非“源码”，主要有两方面的考虑：
 
 1.  React-Hooks 在源码层面和 Fiber 关联十分密切，我们目前仍然处于基础夯实阶段，对 Fiber 机制相关的底层实现暂时没有讨论，盲目啃源码在这个阶段来说没有意义；
-    
 2.  原理 !== 源码，阅读源码只是掌握原理的一种手段，在某些场景下，阅读源码确实能够迅速帮我们定位到问题的本质（比如 React.createElement 的源码就可以快速帮我们理解 JSX 转换出来的到底是什么东西）；而 React-Hooks 的源码链路相对来说比较长，涉及的关键函数 renderWithHooks 中“脏逻辑”也比较多，整体来说，学习成本比较高，学习效果也难以保证。
-    
 
 综上所述，这里我不会精细地贴出每一行具体的源码，而是针对关键方法做重点分析。同时我也**不建议你在对 Fiber 底层实现没有认知的前提下去和 Hooks 源码死磕**。对于搞清楚“Hooks 的执行顺序为什么必须一样”这个问题来说，重要的并不是去细抠每一行代码到底都做了什么，而是要搞清楚整个**调用链路**是什么样的。如果我们能够理解 Hooks 在每个关键环节都做了哪些事情，同时也能理解这些关键环节是如何对最终的渲染结果产生影响的，那么理解 Hooks 的工作机制对于你来说就不在话下了。
 
@@ -168,16 +163,16 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
 
     // 进入 mounState 逻辑
     function mountState(initialState) {
-    
+
       // 将新的 hook 对象追加进链表尾部
       var hook = mountWorkInProgressHook();
-    
+
       // initialState 可以是一个回调，若是回调，则取回调执行后的值
       if (typeof initialState === 'function') {
         // $FlowFixMe: Flow doesn't like mixed types
         initialState = initialState();
       }
-    
+
       // 创建当前 hook 对象的更新队列，这一步主要是为了能够依序保留 dispatch
       const queue = hook.queue = {
         last: null,
@@ -185,16 +180,15 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
         lastRenderedReducer: basicStateReducer,
         lastRenderedState: (initialState: any),
       };
-    
+
       // 将 initialState 作为一个“记忆值”存下来
       hook.memoizedState = hook.baseState = initialState;
-    
+
       // dispatch 是由上下文中一个叫 dispatchAction 的方法创建的，这里不必纠结这个方法具体做了什么
       var dispatch = queue.dispatch = dispatchAction.bind(null, currentlyRenderingFiber$1, queue);
       // 返回目标数组，dispatch 其实就是示例中常常见到的 setXXX 这个函数，想不到吧？哈哈
       return [hook.memoizedState, dispatch];
     }
-    
 
 从这段源码中我们可以看出，**mounState 的主要工作是初始化 Hooks**。在整段源码中，最需要关注的是 mountWorkInProgressHook 方法，它为我们道出了 Hooks 背后的数据结构组织形式。以下是 mountWorkInProgressHook 方法的源码：
 
@@ -217,7 +211,6 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
       // 返回当前的 hook
       return workInProgressHook;
     }
-    
 
 到这里可以看出，**hook 相关的所有信息收敛在一个 hook 对象里，而 hook 对象之间以单向链表的形式相互串联**。
 
@@ -245,7 +238,7 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
     function PersonalInfoComponent() {
       // 定义变量的逻辑不变
       let name, age, career, setName, setCareer;
-    
+
       // 这里追加对 isMounted 的输出，这是一个 debug 性质的操作
       console.log("isMounted is", isMounted);
       // 这里追加 if 逻辑：只有在首次渲染（组件还未挂载）时，才获取 name、age 两个状态
@@ -254,11 +247,11 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
         [name, setName] = useState("修言");
         // eslint-disable-next-line
         [age] = useState("99");
-    
+
         // if 内部的逻辑执行一次后，就将 isMounted 置为 true（说明已挂载，后续都不再是首次渲染了）
         isMounted = true;
       }
-    
+
       // 对职业信息的获取逻辑不变
       [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
       // 这里追加对 career 的输出，这也是一个 debug 性质的操作
@@ -280,14 +273,12 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
       );
     }
     export default PersonalInfoComponent;
-    
 
 从代码里面，我们可以提取出来的 useState 调用有三个：
 
     [name, setName] = useState("修言");
     [age] = useState("99");
     [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
-    
 
 这三个调用在首次渲染的时候都会发生，伴随而来的链表结构如图所示：
 
@@ -296,7 +287,6 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
 当首次渲染结束，进行二次渲染的时候，实际发生的 useState 调用只有一个：
 
     useState("我是一个前端，爱吃小熊饼干")
-    
 
 而此时的链表情况如下图所示：
 
