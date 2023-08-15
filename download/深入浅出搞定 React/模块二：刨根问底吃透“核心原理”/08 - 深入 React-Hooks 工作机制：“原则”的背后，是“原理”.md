@@ -52,7 +52,7 @@ function PersonalInfoComponent() {
 export default PersonalInfoComponent;
 ```
 
-这个 PersonalInfoComponent 组件渲染出来的界面长这样：
+这个 `PersonalInfoComponent` 组件渲染出来的界面长这样：
 
 ![1.png](https://s0.lgstatic.com/i/image/M00/89/5F/Ciqc1F_YT0uAT1kZAACw9EfbQe8557.png)
 
@@ -62,47 +62,49 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
 
 到目前为止，组件的行为都是符合我们的预期的，一切看上去都是那么的和谐。但倘若我对代码做一丝小小的改变，把一部分的 useState 操作放进 if 语句里，事情就会变得大不一样。改动后的代码如下：
 
-    import React, { useState } from "react";
-    // isMounted 用于记录是否已挂载（是否是首次渲染）
-    let isMounted = false;
-    function PersonalInfoComponent() {
-      // 定义变量的逻辑不变
-      let name, age, career, setName, setCareer;
+```jsx
+import React, { useState } from "react";
+// isMounted 用于记录是否已挂载（是否是首次渲染）
+let isMounted = false;
+function PersonalInfoComponent() {
+  // 定义变量的逻辑不变
+  let name, age, career, setName, setCareer;
 
-      // 这里追加对 isMounted 的输出，这是一个 debug 性质的操作
-      console.log("isMounted is", isMounted);
-      // 这里追加 if 逻辑：只有在首次渲染（组件还未挂载）时，才获取 name、age 两个状态
-      if (!isMounted) {
-        // eslint-disable-next-line
-        [name, setName] = useState("修言");
-        // eslint-disable-next-line
-        [age] = useState("99");
+  // 这里追加对 isMounted 的输出，这是一个 debug 性质的操作
+  console.log("isMounted is", isMounted);
+  // 这里追加 if 逻辑：只有在首次渲染（组件还未挂载）时，才获取 name、age 两个状态
+  if (!isMounted) {
+    // eslint-disable-next-line
+    [name, setName] = useState("修言");
+    // eslint-disable-next-line
+    [age] = useState("99");
 
-        // if 内部的逻辑执行一次后，就将 isMounted 置为 true（说明已挂载，后续都不再是首次渲染了）
-        isMounted = true;
-      }
+    // if 内部的逻辑执行一次后，就将 isMounted 置为 true（说明已挂载，后续都不再是首次渲染了）
+    isMounted = true;
+  }
 
-      // 对职业信息的获取逻辑不变
-      [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
-      // 这里追加对 career 的输出，这也是一个 debug 性质的操作
-      console.log("career", career);
-      // UI 逻辑的改动在于，name和age成了可选的展示项，若值为空，则不展示
-      return (
-        <div className="personalInfo">
-          {name ? <p>姓名：{name}</p> : null}
-          {age ? <p>年龄：{age}</p> : null}
-          <p>职业：{career}</p>
-          <button
-            onClick={() => {
-              setName("秀妍");
-            }}
-          >
-            修改姓名
-          </button>
-        </div>
-      );
-    }
-    export default PersonalInfoComponent;
+  // 对职业信息的获取逻辑不变
+  [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
+  // 这里追加对 career 的输出，这也是一个 debug 性质的操作
+  console.log("career", career);
+  // UI 逻辑的改动在于，name和age成了可选的展示项，若值为空，则不展示
+  return (
+    <div className="personalInfo">
+      {name ? <p>姓名：{name}</p> : null}
+      {age ? <p>年龄：{age}</p> : null}
+      <p>职业：{career}</p>
+      <button
+        onClick={() => {
+          setName("秀妍");
+        }}
+      >
+        修改姓名
+      </button>
+    </div>
+  );
+}
+export default PersonalInfoComponent;
+```
 
 修改后的组件在初始渲染的时候，界面与上个版本无异：
 
@@ -132,13 +134,15 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
 
 二次渲染时，isMounted 为 true，这个没毛病。但是 career 竟然被修改为了“秀妍”，这也太诡异了？代码里面可不是这么写的。赶紧回头确认一下按钮单击事件的回调内容，代码如下所示：
 
-     <button
-       onClick={() => {
-        setName("秀妍");
-      }}
-       >
-      修改姓名
-    </button>
+```jsx
+<button
+  onClick={() => {
+    setName("秀妍");
+  }}
+>
+  修改姓名
+</button>
+```
 
 确实，代码是没错的，我们调用的是 setName，那么它修改的状态也应该是 name，而不是 career。
 
@@ -161,56 +165,63 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
 
 在这个流程中，useState 触发的一系列操作最后会落到 mountState 里面去，所以我们重点需要关注的就是 mountState 做了什么事情。以下我为你提取了 mountState 的源码：
 
-    // 进入 mounState 逻辑
-    function mountState(initialState) {
+```jsx
+// 进入 mounState 逻辑
+function mountState(initialState) {
+  // 将新的 hook 对象追加进链表尾部
+  var hook = mountWorkInProgressHook();
 
-      // 将新的 hook 对象追加进链表尾部
-      var hook = mountWorkInProgressHook();
+  // initialState 可以是一个回调，若是回调，则取回调执行后的值
+  if (typeof initialState === "function") {
+    // $FlowFixMe: Flow doesn't like mixed types
+    initialState = initialState();
+  }
 
-      // initialState 可以是一个回调，若是回调，则取回调执行后的值
-      if (typeof initialState === 'function') {
-        // $FlowFixMe: Flow doesn't like mixed types
-        initialState = initialState();
-      }
+  // 创建当前 hook 对象的更新队列，这一步主要是为了能够依序保留 dispatch
+  const queue = (hook.queue = {
+    last: null,
+    dispatch: null,
+    lastRenderedReducer: basicStateReducer,
+    lastRenderedState: (initialState: any),
+  });
 
-      // 创建当前 hook 对象的更新队列，这一步主要是为了能够依序保留 dispatch
-      const queue = hook.queue = {
-        last: null,
-        dispatch: null,
-        lastRenderedReducer: basicStateReducer,
-        lastRenderedState: (initialState: any),
-      };
+  // 将 initialState 作为一个“记忆值”存下来
+  hook.memoizedState = hook.baseState = initialState;
 
-      // 将 initialState 作为一个“记忆值”存下来
-      hook.memoizedState = hook.baseState = initialState;
-
-      // dispatch 是由上下文中一个叫 dispatchAction 的方法创建的，这里不必纠结这个方法具体做了什么
-      var dispatch = queue.dispatch = dispatchAction.bind(null, currentlyRenderingFiber$1, queue);
-      // 返回目标数组，dispatch 其实就是示例中常常见到的 setXXX 这个函数，想不到吧？哈哈
-      return [hook.memoizedState, dispatch];
-    }
+  // dispatch 是由上下文中一个叫 dispatchAction 的方法创建的，这里不必纠结这个方法具体做了什么
+  var dispatch = (queue.dispatch = dispatchAction.bind(
+    null,
+    currentlyRenderingFiber$1,
+    queue
+  ));
+  // 返回目标数组，dispatch 其实就是示例中常常见到的 setXXX 这个函数，想不到吧？哈哈
+  return [hook.memoizedState, dispatch];
+}
+```
 
 从这段源码中我们可以看出，**mounState 的主要工作是初始化 Hooks**。在整段源码中，最需要关注的是 mountWorkInProgressHook 方法，它为我们道出了 Hooks 背后的数据结构组织形式。以下是 mountWorkInProgressHook 方法的源码：
 
-    function mountWorkInProgressHook() {
-      // 注意，单个 hook 是以对象的形式存在的
-      var hook = {
-        memoizedState: null,
-        baseState: null,
-        baseQueue: null,
-        queue: null,
-        next: null
-      };
-      if (workInProgressHook === null) {
-        // 这行代码每个 React 版本不太一样，但做的都是同一件事：将 hook 作为链表的头节点处理
-        firstWorkInProgressHook = workInProgressHook = hook;
-      } else {
-        // 若链表不为空，则将 hook 追加到链表尾部
-        workInProgressHook = workInProgressHook.next = hook;
-      }
-      // 返回当前的 hook
-      return workInProgressHook;
-    }
+```jsx
+function mountWorkInProgressHook() {
+  // 注意，单个 hook 是以对象的形式存在的
+  var hook = {
+    memoizedState: null,
+    baseState: null,
+    baseQueue: null,
+    queue: null,
+    next: null,
+  };
+  if (workInProgressHook === null) {
+    // 这行代码每个 React 版本不太一样，但做的都是同一件事：将 hook 作为链表的头节点处理
+    firstWorkInProgressHook = workInProgressHook = hook;
+  } else {
+    // 若链表不为空，则将 hook 追加到链表尾部
+    workInProgressHook = workInProgressHook.next = hook;
+  }
+  // 返回当前的 hook
+  return workInProgressHook;
+}
+```
 
 到这里可以看出，**hook 相关的所有信息收敛在一个 hook 对象里，而 hook 对象之间以单向链表的形式相互串联**。
 
@@ -232,53 +243,57 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
 
 我们先来复习一下修改过后的 PersonalInfoComponent 组件代码：
 
-    import React, { useState } from "react";
-    // isMounted 用于记录是否已挂载（是否是首次渲染）
-    let isMounted = false;
-    function PersonalInfoComponent() {
-      // 定义变量的逻辑不变
-      let name, age, career, setName, setCareer;
+```jsx
+import React, { useState } from "react";
+// isMounted 用于记录是否已挂载（是否是首次渲染）
+let isMounted = false;
+function PersonalInfoComponent() {
+  // 定义变量的逻辑不变
+  let name, age, career, setName, setCareer;
 
-      // 这里追加对 isMounted 的输出，这是一个 debug 性质的操作
-      console.log("isMounted is", isMounted);
-      // 这里追加 if 逻辑：只有在首次渲染（组件还未挂载）时，才获取 name、age 两个状态
-      if (!isMounted) {
-        // eslint-disable-next-line
-        [name, setName] = useState("修言");
-        // eslint-disable-next-line
-        [age] = useState("99");
+  // 这里追加对 isMounted 的输出，这是一个 debug 性质的操作
+  console.log("isMounted is", isMounted);
+  // 这里追加 if 逻辑：只有在首次渲染（组件还未挂载）时，才获取 name、age 两个状态
+  if (!isMounted) {
+    // eslint-disable-next-line
+    [name, setName] = useState("修言");
+    // eslint-disable-next-line
+    [age] = useState("99");
 
-        // if 内部的逻辑执行一次后，就将 isMounted 置为 true（说明已挂载，后续都不再是首次渲染了）
-        isMounted = true;
-      }
+    // if 内部的逻辑执行一次后，就将 isMounted 置为 true（说明已挂载，后续都不再是首次渲染了）
+    isMounted = true;
+  }
 
-      // 对职业信息的获取逻辑不变
-      [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
-      // 这里追加对 career 的输出，这也是一个 debug 性质的操作
-      console.log("career", career);
-      // UI 逻辑的改动在于，name 和 age 成了可选的展示项，若值为空，则不展示
-      return (
-        <div className="personalInfo">
-          {name ? <p>姓名：{name}</p> : null}
-          {age ? <p>年龄：{age}</p> : null}
-          <p>职业：{career}</p>
-          <button
-            onClick={() => {
-              setName("秀妍");
-            }}
-          >
-            修改姓名
-          </button>
-        </div>
-      );
-    }
-    export default PersonalInfoComponent;
+  // 对职业信息的获取逻辑不变
+  [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
+  // 这里追加对 career 的输出，这也是一个 debug 性质的操作
+  console.log("career", career);
+  // UI 逻辑的改动在于，name 和 age 成了可选的展示项，若值为空，则不展示
+  return (
+    <div className="personalInfo">
+      {name ? <p>姓名：{name}</p> : null}
+      {age ? <p>年龄：{age}</p> : null}
+      <p>职业：{career}</p>
+      <button
+        onClick={() => {
+          setName("秀妍");
+        }}
+      >
+        修改姓名
+      </button>
+    </div>
+  );
+}
+export default PersonalInfoComponent;
+```
 
 从代码里面，我们可以提取出来的 useState 调用有三个：
 
-    [name, setName] = useState("修言");
-    [age] = useState("99");
-    [career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
+```jsx
+[name, setName] = useState("修言");
+[age] = useState("99");
+[career, setCareer] = useState("我是一个前端，爱吃小熊饼干");
+```
 
 这三个调用在首次渲染的时候都会发生，伴随而来的链表结构如图所示：
 
@@ -286,7 +301,7 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
 
 当首次渲染结束，进行二次渲染的时候，实际发生的 useState 调用只有一个：
 
-    useState("我是一个前端，爱吃小熊饼干")
+`useState("我是一个前端，爱吃小熊饼干")`
 
 而此时的链表情况如下图所示：
 
@@ -306,4 +321,4 @@ PersonalInfoComponent 用于对个人信息进行展示，这里展示的内容�
 
 在过去的三个课时里，我们摸排了“动机”，认知了“工作模式”，最后更是结合源码、深挖了一把 React-Hooks 的底层原理。我们所做的这所有的努力，都是为了能够真正吃透 React-Hooks，不仅要确保实践中不出错，还要做到面试时有底气。
 
-接下来，我们就将进入整个专栏真正的“深水区”，逐步切入“虚拟 DOM → Diff 算法 → Fiber 架构”这个知识链路里来。在后续的学习中，我们将延续并且强化这种“刨根问底”的风格，紧贴源码、原理和面试题来向 React 最为核心的部分发起挑战。真正的战斗，才刚刚开始，大家加油~
+接下来，我们就将进入整个专栏真正的“深水区”，逐步切入 `“虚拟 DOM → Diff 算法 → Fiber 架构”` 这个知识链路里来。在后续的学习中，我们将延续并且强化这种“刨根问底”的风格，紧贴源码、原理和面试题来向 React 最为核心的部分发起挑战。真正的战斗，才刚刚开始，大家加油~
